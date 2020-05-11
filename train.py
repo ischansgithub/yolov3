@@ -1,3 +1,7 @@
+import os
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+print('pid:{}   GPU:{}'.format(os.getpid(), os.environ['CUDA_VISIBLE_DEVICES']))
+
 import argparse
 
 import torch.distributed as dist
@@ -17,10 +21,10 @@ except:
     print('Apex recommended for faster mixed precision training: https://github.com/NVIDIA/apex')
     mixed_precision = False  # not installed
 
-wdir = 'weights' + os.sep  # weights dir
-last = wdir + 'last.pt'
-best = wdir + 'best.pt'
-results_file = 'results.txt'
+# wdir = 'weights' + os.sep  # weights dir
+# last = wdir + 'last.pt'
+# best = wdir + 'best.pt'
+# results_file = 'results.txt'
 
 # Hyperparameters
 hyp = {'giou': 3.54,  # giou loss gain
@@ -55,6 +59,13 @@ if hyp['fl_gamma']:
 
 
 def train():
+    # added by chenww
+    wdir = opt.weight_save_path
+    last = wdir + 'last.pt'
+    best = wdir + 'best.pt'
+    results_file = wdir + 'results.txt'
+    # added by chenww
+
     cfg = opt.cfg
     data = opt.data
     epochs = opt.epochs  # 500200 batches at bs 64, 117263 images = 273 epochs
@@ -346,6 +357,7 @@ def train():
                          'optimizer': None if final_epoch else optimizer.state_dict()}
 
             # Save last, best and delete
+
             torch.save(chkpt, last)
             if (best_fitness == fi) and not final_epoch:
                 torch.save(chkpt, best)
@@ -380,7 +392,7 @@ if __name__ == '__main__':
     parser.add_argument('--cfg', type=str, default='cfg/yolov3-spp.cfg', help='*.cfg path')
     parser.add_argument('--data', type=str, default='data/coco2017.data', help='*.data path')
     parser.add_argument('--multi-scale', action='store_true', help='adjust (67%% - 150%%) img_size every 10 batches')
-    parser.add_argument('--img-size', nargs='+', type=int, default=[320, 640], help='[min_train, max-train, test]')
+    parser.add_argument('--img-size', nargs='+', type=int, default=[768, 1024], help='[min_train, max-train, test]')
     parser.add_argument('--rect', action='store_true', help='rectangular training')
     parser.add_argument('--resume', action='store_true', help='resume training from last.pt')
     parser.add_argument('--nosave', action='store_true', help='only save final checkpoint')
@@ -393,6 +405,10 @@ if __name__ == '__main__':
     parser.add_argument('--device', default='', help='device id (i.e. 0 or 0,1 or cpu)')
     parser.add_argument('--adam', action='store_true', help='use adam optimizer')
     parser.add_argument('--single-cls', action='store_true', help='train as single-class dataset')
+    # added by chenww
+    parser.add_argument('--weight_save_path', type=str)
+
+
     opt = parser.parse_args()
     opt.weights = last if opt.resume else opt.weights
     check_git_status()
