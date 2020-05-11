@@ -46,7 +46,12 @@ class LoadImages:  # for inference
         path = str(Path(path))  # os-agnostic
         files = []
         if os.path.isdir(path):
-            files = sorted(glob.glob(os.path.join(path, '*.*')))
+            # files = sorted(glob.glob(os.path.join(path, '*.*')))
+
+            # inference folder: folder/cls/*.jpg
+            for cls in os.listdir(path):
+                files.extend(sorted(glob.glob(os.path.join(path, cls, '*.*'))))
+                
         elif os.path.isfile(path):
             files = [path]
 
