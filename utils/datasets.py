@@ -51,7 +51,7 @@ class LoadImages:  # for inference
             # inference folder: folder/cls/*.jpg
             for cls in os.listdir(path):
                 files.extend(sorted(glob.glob(os.path.join(path, cls, '*.*'))))
-                
+
         elif os.path.isfile(path):
             files = [path]
 
