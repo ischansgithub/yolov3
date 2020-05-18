@@ -1,0 +1,9 @@
+CUDA_VISIBLE_DEVICES=0 python detect.py \
+--cfg=/data1/chenww/my_research/yolov3/cfg/yolov3-tiny-6cls.cfg  \
+--names=/data1/chenww/my_research/yolov3/data/pcb/pcb.names  \
+--weights=/data1/chenww/my_research/yolov3/output/pcb_ori_1024_bs2_ep300_scratch_oriAnachor_yolo3tiny/best.pt \
+--source=/data1/chenww/my_research/yolov3/data/pcb/images/test/  \
+--output=/data1/chenww/my_research/yolov3/output/pcb_ori_1024_bs2_ep300_scratch_oriAnachor_yolo3tiny/inference_test_result/  \
+--img-size=1024 \
+--conf-thres=0.1 \
+--iou-thres=0.001

@@ -1,0 +1,32 @@
+nohup: ignoring input
+Caching labels:   0%|          | 0/558 [00:00<?, ?it/s]Caching labels (542 found, 0 missing, 0 empty, 0 duplicate, for 558 images):  97%|█████████▋| 542/558 [00:00<00:00, 5417.98it/s]Caching labels (558 found, 0 missing, 0 empty, 0 duplicate, for 558 images): 100%|██████████| 558/558 [00:00<00:00, 5387.90it/s]
+Caching labels:   0%|          | 0/135 [00:00<?, ?it/s]Caching labels (135 found, 0 missing, 0 empty, 0 duplicate, for 135 images): 100%|██████████| 135/135 [00:00<00:00, 3434.95it/s]pid:28881   GPU:2
+Apex recommended for faster mixed precision training: https://github.com/NVIDIA/apex
+Namespace(adam=False, batch_size=2, bucket='', cache_images=False, cfg='/data1/chenww/my_research/yolov3/cfg/yolov4-6cls.cfg', data='/data1/chenww/my_research/yolov3/data/pcb/pcb.data', device='', epochs=300, evolve=False, img_size=[1024], multi_scale=False, name='', nosave=False, notest=False, rect=False, resume=False, single_cls=False, weight_save_path='/data1/chenww/my_research/yolov3/output/pcb_ori_1024_bs2_ep300_scratch_oriAnachor_yolo4ori/', weights='')
+Using CUDA device0 _CudaDeviceProperties(name='Tesla P100-PCIE-16GB', total_memory=16280MB)
+
+Start Tensorboard with "tensorboard --logdir=runs", view at http://localhost:6006/
+Model Summary: 327 layers, 6.39646e+07 parameters, 6.39646e+07 gradients
+Optimizer groups: 110 .bias, 110 Conv2d.weight, 107 other
+Image sizes 1024 - 1024 train, 1024 test
+Using 2 dataloader workers
+Starting training for 300 epochs...
+
+     Epoch   gpu_mem      GIoU       obj       cls     total   targets  img_size
+
+  0%|          | 0/279 [00:00<?, ?it/s]Traceback (most recent call last):
+  File "train.py", line 429, in <module>
+    train()  # train normally
+  File "train.py", line 275, in train
+    pred = model(imgs)
+  File "/home/mmdetection/anaconda3/lib/python3.7/site-packages/torch/nn/modules/module.py", line 493, in __call__
+    result = self.forward(*input, **kwargs)
+  File "/data1/chenww/my_research/yolov3/models.py", line 238, in forward
+    return self.forward_once(x)
+  File "/data1/chenww/my_research/yolov3/models.py", line 288, in forward_once
+    x = module(x, out)  # WeightedFeatureFusion(), FeatureConcat()
+  File "/home/mmdetection/anaconda3/lib/python3.7/site-packages/torch/nn/modules/module.py", line 493, in __call__
+    result = self.forward(*input, **kwargs)
+  File "/data1/chenww/my_research/yolov3/utils/layers.py", line 35, in forward
+    return torch.cat([outputs[i] for i in self.layers], 1) if self.multiple else outputs[self.layers[0]]
+RuntimeError: CUDA out of memory. Tried to allocate 64.00 MiB (GPU 0; 15.90 GiB total capacity; 7.47 GiB already allocated; 30.88 MiB free; 6.58 MiB cached)

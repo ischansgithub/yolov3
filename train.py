@@ -329,6 +329,7 @@ def train():
 
         # Write
         with open(results_file, 'a') as f:
+            # result.txt : ep/total_ep  gpu_mem  m_GIoU_loss, m_obj_loss, m_cls_loss, m_total_loss, bbox_targets, img_size,  P, R, mAP, F1, test_losses=(GIoU, obj, cls)
             f.write(s + '%10.3g' * 7 % results + '\n')  # P, R, mAP, F1, test_losses=(GIoU, obj, cls)
         if len(opt.name) and opt.bucket:
             os.system('gsutil cp results.txt gs://%s/results/results%s.txt' % (opt.bucket, opt.name))
@@ -392,7 +393,7 @@ if __name__ == '__main__':
     parser.add_argument('--cfg', type=str, default='cfg/yolov3-spp.cfg', help='*.cfg path')
     parser.add_argument('--data', type=str, default='data/coco2017.data', help='*.data path')
     parser.add_argument('--multi-scale', action='store_true', help='adjust (67%% - 150%%) img_size every 10 batches')
-    parser.add_argument('--img-size', nargs='+', type=int, default=[768, 1024], help='[min_train, max-train, test]')
+    parser.add_argument('--img-size', nargs='+', type=int, default=[1024], help='[min_train, max-train, test]')
     parser.add_argument('--rect', action='store_true', help='rectangular training')
     parser.add_argument('--resume', action='store_true', help='resume training from last.pt')
     parser.add_argument('--nosave', action='store_true', help='only save final checkpoint')

@@ -2,7 +2,7 @@
 import os
 import os.path as osp
 import xml.dom.minidom as minidom
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import numpy as np
 import shutil
 import cv2
@@ -37,13 +37,13 @@ output_dat_root:输出train.txt 或者 val.txt,记录第一个图片的路径
 '''
 
 
-img_root = '/data1/chenww/my_research/yolov3/data/pcb/images/val/'
-output_dat_root = '/data1/chenww/my_research/yolov3/data/temp/'
-output_txt_root = '/data1/chenww/my_research/yolov3/data/temp/'
+img_root = '/data1/chenww/my_research/yolov3/data/pcb/images/test/'
+output_dat_root = '/data1/chenww/my_research/yolov3/data/pcb/'
+output_txt_root = '/data1/chenww/my_research/yolov3/data/pcb/labels/'
 
 
 cls2id = {'Missing_hole':0, 'Mouse_bite':1, 'Open_circuit':2, 'Short':3, 'Spur':4, 'Spurious_copper':5}
-train_or_val = 'val' # 生成'train.dat或生成val.dat'
+train_or_val = 'test' # 生成'train.dat或生成val.dat'
 
 def read_xml(xml_filename):
     dom = minidom.parse(xml_filename)
@@ -134,10 +134,6 @@ for i, class_name in enumerate(os.listdir(img_root)):
             txt_file_cnt += 1
             for xmin, ymin, xmax, ymax in bboxes:
                 cx, cy, fw, fh = xyxy2xywh([height, width], [xmin, ymin, xmax, ymax])
-                print(cx,cy,fw,fh)
-                cx, cy, fw, fh = xyxy2xywh_old([height, width], [xmin, ymin, xmax, ymax])
-                print(cx, cy, fw, fh)
-                assert  0
                 f.write('{} {} {} {} {}\n'.format(cls2id[class_name], cx, cy, fw, fh))
 
         # 生成train.txt的ots_img_path要放在最后面，因为要保证通过标注信息滤除掉的标注文件 == 图片文件
