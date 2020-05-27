@@ -35,15 +35,24 @@ output_txt_root
 output_dat_root:输出train.txt 或者 val.txt,记录第一个图片的路径
 
 '''
+# or PCB
+datasetName = 'ADC'
+# 生成'train.dat或生成val.dat'
+train_or_val = 'train_val'
+# images path root
+img_root = '/data1/chenww/my_research/yolov3/data/d13/small_8cls/images/train_val/'
+# single txt per image
+output_txt_root = '/data1/chenww/my_research/yolov3/data/d13/small_8cls/labels/'
+# path info of all images
+output_dat_root = '/data1/chenww/my_research/yolov3/data/d13/small_8cls/'
+
+cls2id = {'TCPIA':0, 'TCPOA':1, 'TCSAD':2, 'TGGS0':3, 'TPDPS':4, 'TSDFS':5, 'TSILR':6, 'TTFBG':7}
 
 
-img_root = '/data1/chenww/my_research/yolov3/data/pcb/images/test/'
-output_dat_root = '/data1/chenww/my_research/yolov3/data/pcb/'
-output_txt_root = '/data1/chenww/my_research/yolov3/data/pcb/labels/'
 
+# cls2id = {'Missing_hole':0, 'Mouse_bite':1, 'Open_circuit':2, 'Short':3, 'Spur':4, 'Spurious_copper':5}
+# cls2id = {'TCOTS':0, 'TCPIA':1, 'TCPOA':2, 'TCSAD':3, 'TGGS0':4, 'TPDPS':5, 'TSDFS':6, 'TSILR':7, 'TTFBG':8, 'TTP3G':9, 'TTSPG':10}
 
-cls2id = {'Missing_hole':0, 'Mouse_bite':1, 'Open_circuit':2, 'Short':3, 'Spur':4, 'Spurious_copper':5}
-train_or_val = 'test' # 生成'train.dat或生成val.dat'
 
 def read_xml(xml_filename):
     dom = minidom.parse(xml_filename)
@@ -103,7 +112,7 @@ fas_img_path = []
 txt_file_cnt = 0
 
 for i, class_name in enumerate(os.listdir(img_root)):
-    if class_name not in cls2id: continue
+    # if class_name not in cls2id: continue
 
     path = os.path.join(img_root, class_name)
 
@@ -113,6 +122,11 @@ for i, class_name in enumerate(os.listdir(img_root)):
         xml = img_file[:-3] + 'xml'
         xml_filename_path = os.path.join(img_root,class_name, xml)
         img_file_path = os.path.join(img_root,class_name, img_file)
+        ots_img_path.append(img_file_path)
+
+        # 不读取XML文件，但上一步操作会将图片信息加入
+        if class_name == 'TSFAS' and datasetName == 'ADC' :
+            continue
 
         try:  # 防止 xml中的 bboxes信息为空或者没有xml这个文件，会发生错误
             # filename, bboxes, cls = read_xml(xml_filename_path)
@@ -123,12 +137,13 @@ for i, class_name in enumerate(os.listdir(img_root)):
 
         img = cv2.imread(img_file_path)
         height, width, _ = img.shape
-        assert img is not None, img_file_path
+        assert img is not None
 
         output_txt_path = osp.join(output_txt_root, train_or_val, class_name)
         if not osp.exists(output_txt_path):  os.makedirs(output_txt_path)
         output_txt_path = output_txt_path + '/' + img_file[:-3] + 'txt'
-        
+
+        # 每个xml -> 每个txt
         with open(output_txt_path, 'w') as f:
             assert bboxes is not None
             txt_file_cnt += 1
@@ -136,14 +151,13 @@ for i, class_name in enumerate(os.listdir(img_root)):
                 cx, cy, fw, fh = xyxy2xywh([height, width], [xmin, ymin, xmax, ymax])
                 f.write('{} {} {} {} {}\n'.format(cls2id[class_name], cx, cy, fw, fh))
 
-        # 生成train.txt的ots_img_path要放在最后面，因为要保证通过标注信息滤除掉的标注文件 == 图片文件
-        ots_img_path.append(img_file_path)
+
 
 print("==================================")
 print("img_num:", len(ots_img_path))
 print("txt_num:", txt_file_cnt)
 
-
+# 所有图片的路径信息
 with open(output_dat_root + '{}.txt'.format(train_or_val), 'w') as f:
     for ots_img in ots_img_path:
         f.write(ots_img + '\n')

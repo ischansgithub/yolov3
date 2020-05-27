@@ -114,6 +114,10 @@ def create_modules(module_defs, img_size, cfg):
             except:
                 print('WARNING: smart bias initialization failure.')
 
+        #---------------------------added by chenww-----------------------------------------------------------
+        elif mdef['type'] == 'se':
+            modules.add_module('se_module', SELayer(output_filters[-1], reduction=int(mdef['reduction'])))
+        # ---------------------------added by chenww-----------------------------------------------------------
         else:
             print('Warning: Unrecognized Layer Type: ' + mdef['type'])
 
@@ -232,6 +236,7 @@ class Darknet(nn.Module):
         self.seen = np.array([0], dtype=np.int64)  # (int64) number of images seen during training
         self.info(verbose) if not ONNX_EXPORT else None  # print model description
 
+    # original forward function
     def forward(self, x, augment=False, verbose=False):
 
         if not augment:
@@ -311,6 +316,59 @@ class Darknet(nn.Module):
                 x[2][..., :4] /= s[1]  # scale
                 x = torch.cat(x, 1)
             return x, p
+
+    """
+    # original forward_once function
+    def forward_once(self, x, augment=False, verbose=False):
+        img_size = x.shape[-2:]  # height, width
+        yolo_out, out = [], []
+        if verbose:
+            print('0', x.shape)
+            str = ''
+
+        # Augment images (inference and test only)
+        if augment:  # https://github.com/ultralytics/yolov3/issues/931
+            nb = x.shape[0]  # batch size
+            s = [0.83, 0.67]  # scales
+            x = torch.cat((x,
+                           torch_utils.scale_img(x.flip(3), s[0]),  # flip-lr and scale
+                           torch_utils.scale_img(x, s[1]),  # scale
+                           ), 0)
+
+        for i, module in enumerate(self.module_list):
+            name = module.__class__.__name__
+            if name in ['WeightedFeatureFusion', 'FeatureConcat']:  # sum, concat
+                if verbose:
+                    l = [i - 1] + module.layers  # layers
+                    sh = [list(x.shape)] + [list(out[i].shape) for i in module.layers]  # shapes
+                    str = ' >> ' + ' + '.join(['layer %g %s' % x for x in zip(l, sh)])
+                x = module(x, out)  # WeightedFeatureFusion(), FeatureConcat()
+            elif name == 'YOLOLayer':
+                yolo_out.append(module(x, out))
+            else:  # run module directly, i.e. mtype = 'convolutional', 'upsample', 'maxpool', 'batchnorm2d' etc.
+                x = module(x)
+
+            out.append(x if self.routs[i] else [])
+            if verbose:
+                print('%g/%g %s -' % (i, len(self.module_list), name), list(x.shape), str)
+                str = ''
+
+        if self.training:  # train
+            return yolo_out
+        elif ONNX_EXPORT:  # export
+            x = [torch.cat(x, 0) for x in zip(*yolo_out)]
+            return x[0], torch.cat(x[1:3], 1)  # scores, boxes: 3780x80, 3780x4
+        else:  # inference or test
+            x, p = zip(*yolo_out)  # inference output, training output
+            x = torch.cat(x, 1)  # cat yolo outputs
+            if augment:  # de-augment results
+                x = torch.split(x, nb, dim=0)
+                x[1][..., :4] /= s[0]  # scale
+                x[1][..., 0] = img_size[1] - x[1][..., 0]  # flip lr
+                x[2][..., :4] /= s[1]  # scale
+                x = torch.cat(x, 1)
+            return x, p
+    """
 
     def fuse(self):
         # Fuse Conv2d + BatchNorm2d layers throughout model
@@ -470,3 +528,53 @@ def attempt_download(weights):
         if not (r == 0 and os.path.exists(weights) and os.path.getsize(weights) > 1E6):  # weights exist and > 1MB
             os.system('rm ' + weights)  # remove partial downloads
             raise Exception(msg)
+
+#-------------------------------------------------add by chenww----------------------------------------------------------------
+class SELayer(nn.Module):
+    def __init__(self, channel, reduction=16):
+        super(SELayer, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Sequential(
+            nn.Linear(channel, channel // reduction, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(channel // reduction, channel, bias=False),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        b, c, _, _ = x.size()
+        y = self.avg_pool(x).view(b, c)
+        y = self.fc(y).view(b, c, 1, 1)
+        return x * y.expand_as(x)
+
+class ChannelAttention(nn.Module):
+    def __init__(self, in_planes, rotio=16):
+        super(ChannelAttention, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.max_pool = nn.AdaptiveMaxPool2d(1)
+
+        self.sharedMLP = nn.Sequential(
+            nn.Conv2d(in_planes, in_planes // ratio, 1, bias=False), nn.ReLU(),
+            nn.Conv2d(in_planes // rotio, in_planes, 1, bias=False))
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        avgout = self.sharedMLP(self.avg_pool(x))
+        maxout = self.sharedMLP(self.max_pool(x))
+        return self.sigmoid(avgout + maxout)
+
+class SpatialAttention(nn.Module):
+    def __init__(self, kernel_size=7):
+        super(SpatialAttention, self).__init__()
+        assert kernel_size in (3,7), "kernel size must be 3 or 7"
+        padding = 3 if kernel_size == 7 else 1
+
+        self.conv = nn.Conv2d(2,1,kernel_size, padding=padding, bias=False)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        avgout = torch.mean(x, dim=1, keepdim=True)
+        maxout, _ = torch.max(x, dim=1, keepdim=True)
+        x = torch.cat([avgout, maxout], dim=1)
+        x = self.conv(x)
+        return self.sigmoid(x)
