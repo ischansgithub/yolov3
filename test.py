@@ -1,5 +1,6 @@
 import argparse
 import json
+import pdb
 
 from torch.utils.data import DataLoader
 
@@ -78,6 +79,7 @@ def test(cfg,
     jdict, stats, ap, ap_class = [], [], [], []
     for batch_i, (imgs, targets, paths, shapes) in enumerate(tqdm(dataloader, desc=s)):
         imgs = imgs.to(device).float() / 255.0  # uint8 to float32, 0 - 255 to 0.0 - 1.0
+        # targets = [batchsize_idx, cls_idx, x, y, w, h]
         targets = targets.to(device)
         nb, _, height, width = imgs.shape  # batch size, channels, height, width
         whwh = torch.Tensor([width, height, width, height]).to(device)
@@ -99,9 +101,12 @@ def test(cfg,
             t1 += torch_utils.time_synchronized() - t
 
         # Statistics per image
+
+        # 遍历一个batc中每一张图片的output
         for si, pred in enumerate(output):
             labels = targets[targets[:, 0] == si, 1:]
             nl = len(labels)
+            # 如果labels=[cls_idx, x, y, w, h]为空，则tcls = []
             tcls = labels[:, 0].tolist() if nl else []  # target class
             seen += 1
 
@@ -135,15 +140,16 @@ def test(cfg,
             correct = torch.zeros(pred.shape[0], niou, dtype=torch.bool, device=device)
             if nl:
                 detected = []  # target indices
-                tcls_tensor = labels[:, 0]
+                tcls_tensor = labels[:, 0] # gt_cls_idxs,一张图片中可能有多个不同类别的物品
 
-                # target boxes
+                # target boxes, convert to un-norm coordinate
                 tbox = xywh2xyxy(labels[:, 1:5]) * whwh
 
                 # Per target class
+                # 遍历一张图片中所有不同的GT类别
                 for cls in torch.unique(tcls_tensor):
-                    ti = (cls == tcls_tensor).nonzero().view(-1)  # prediction indices
-                    pi = (cls == pred[:, 5]).nonzero().view(-1)  # target indices
+                    ti = (cls == tcls_tensor).nonzero().view(-1)  # target indices
+                    pi = (cls == pred[:, 5]).nonzero().view(-1)  # prediction indices
 
                     # Search for detections
                     if pi.shape[0]:

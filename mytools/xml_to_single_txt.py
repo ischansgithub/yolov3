@@ -40,11 +40,11 @@ datasetName = 'ADC'
 # 生成'train.dat或生成val.dat'
 train_or_val = 'train_val'
 # images path root
-img_root = '/data1/chenww/my_research/yolov3/data/d13/small_8cls/images/train_val/'
+img_root = '/data1/chenww/my_research/yolov3/data/d13/small_1cls/images/train_val/'
 # single txt per image
-output_txt_root = '/data1/chenww/my_research/yolov3/data/d13/small_8cls/labels/'
+output_txt_root = '/data1/chenww/my_research/yolov3/data/d13/small_1cls/labels/'
 # path info of all images
-output_dat_root = '/data1/chenww/my_research/yolov3/data/d13/small_8cls/'
+output_dat_root = '/data1/chenww/my_research/yolov3/data/d13/small_1cls/'
 
 cls2id = {'TCPIA':0, 'TCPOA':1, 'TCSAD':2, 'TGGS0':3, 'TPDPS':4, 'TSDFS':5, 'TSILR':6, 'TTFBG':7}
 
@@ -149,7 +149,8 @@ for i, class_name in enumerate(os.listdir(img_root)):
             txt_file_cnt += 1
             for xmin, ymin, xmax, ymax in bboxes:
                 cx, cy, fw, fh = xyxy2xywh([height, width], [xmin, ymin, xmax, ymax])
-                f.write('{} {} {} {} {}\n'.format(cls2id[class_name], cx, cy, fw, fh))
+                # f.write('{} {} {} {} {}\n'.format(cls2id[class_name], cx, cy, fw, fh))
+                f.write('{} {} {} {} {}\n'.format(0, cx, cy, fw, fh))
 
 
 
