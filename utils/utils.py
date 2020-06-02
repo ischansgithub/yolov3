@@ -177,7 +177,10 @@ def ap_per_class(tp, conf, pred_cls, target_cls):
     """
 
     # Sort by objectness
+    # i为以conf从大到小排序的原conf索引
     i = np.argsort(-conf)
+    # 现在的tp, conf, pred_cls都是以conf从大到小的重新排序
+    # 其中 tp = [[True], [False]， ...]
     tp, conf, pred_cls = tp[i], conf[i], pred_cls[i]
 
     # Find unique classes
@@ -187,7 +190,10 @@ def ap_per_class(tp, conf, pred_cls, target_cls):
     pr_score = 0.1  # score to evaluate P and R https://github.com/ultralytics/yolov3/issues/898
     s = [len(unique_classes), tp.shape[1]]  # number class, number iou thresholds (i.e. 10 for mAP0.5...0.95)
     ap, p, r = np.zeros(s), np.zeros(s), np.zeros(s)
+
+    # 遍历所有的不同的类别，假设当前遍历到的类别为 A
     for ci, c in enumerate(unique_classes):
+        # 现在的i变成：所有预测类别为A的索引
         i = pred_cls == c
         n_gt = (target_cls == c).sum()  # Number of ground truth objects
         n_p = i.sum()  # Number of predicted objects
@@ -195,7 +201,14 @@ def ap_per_class(tp, conf, pred_cls, target_cls):
         if n_p == 0 or n_gt == 0:
             continue
         else:
+            import pdb
+            pdb.set_trace()
+
             # Accumulate FPs and TPs
+            # 当前类别A的FP与TP计数
+            # cumsum实现累加作用，返回与输入相同的shape
+            # 比如tp[i] = [[True], [True], [False], [True]]
+            # 那么tp[i].cumsum(0) = [[1],[2],[2],[3]]
             fpc = (1 - tp[i]).cumsum(0)
             tpc = tp[i].cumsum(0)
 
